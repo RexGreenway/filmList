@@ -38,3 +38,8 @@ def updateFilm(name):
         print("No Such Film.")
     filmList_reader.close()
 
+# Prints just the name column.
+def showUnseen():
+    df = pd.read_csv("filmList.csv")
+    unseen_df = df.loc[df["status"] == "UNSEEN", "name"]
+    print(unseen_df.to_string(index=False))
