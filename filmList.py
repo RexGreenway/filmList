@@ -1,12 +1,58 @@
-import csv
 import pandas as pd
+import csv
 import random
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
+# Google Drive Authorisation Process
+gauth = GoogleAuth()
+# Saves credentials locally for Authorisation
+gauth.LoadCredentialsFile("mycreds.txt")
+if gauth.credentials is None:
+    gauth.LocalWebserverAuth()
+elif gauth.access_token_expired:
+    gauth.Refresh()
+else:
+    gauth.Authorize()
+gauth.SaveCredentialsFile("mycreds.txt")
+
+drive = GoogleDrive(gauth)
+
+# Grabs details of filmList file in google drive.
+file_list = drive.ListFile({"q" : "title='filmList.csv' and trashed=false"}).GetList()
+filmList_id = file_list[0]["id"]
+filmList = drive.CreateFile({"id" : filmList_id})
+filmList.GetContentFile("filmList.csv")
+
+# Film List functions
 # 'status' should be SEEN or UNSEEN
 def addFilm(name, status):
     filmList = open("filmList.csv", "a")
     filmList.write(f"\"{name}\",{status}\n")
     filmList.close()
+
+def removeFilm(name):
+    filmList_reader = open("filmList.csv", "r")
+    csv_read = csv.reader(filmList_reader.readlines())
+    csv_write = csv.writer(open("filmList.csv", "w", newline=""))
+    state = False
+    # Goes through each row in the csv
+    for row in csv_read:
+        # If an existing name is entered replace with the SEEN
+        if name == row[0]:
+            print("Film Removed")
+            pass
+            state = True
+        # If name is close show possible reccomendations. Then write the row.
+        elif name in row[0]:
+            print("See also: ", row[0])
+            csv_write.writerow(row)
+        # Always write the row.
+        else:
+            csv_write.writerow(row)
+    if state == False:
+        print("No Such Film.")
+    filmList_reader.close()
 
 def randomUnseenFilm():
     df = pd.read_csv("filmList.csv")
@@ -53,9 +99,17 @@ def checkFilm(name):
             return
     print("Not in list...")
 
+def checkFilm(name):
+    df = pd.read_csv("filmList.csv")
+    for _, row in df.iterrows():
+        if row["name"] == name:
+            print("Name: ", row["name"], "\nStatus: ", row["status"])
+            return
+    print("Not in list...")
+
 def menu():
     print("\n- SELECT OPERATION -")
-    x = input("[rand, add, update, unseeen, check]: ")
+    x = input("[rand, add, remove, update, unseeen, check]: ")
     if x == "rand":
         print("\nRandom Unseen Film: ")
         randomUnseenFilm()
@@ -66,6 +120,9 @@ def menu():
             addFilm(name, status)
         else:
             print("\nStatus should be SEEN or UNSEEN...")
+    elif x == "remove":
+        name = input("\nEnter Name: ")
+        removeFilm(name)
     elif x == "update":
         name = input("\nEnter Name: ")
         updateFilm(name)
@@ -77,11 +134,12 @@ def menu():
         name = input("\nFilm to check: ")
         checkFilm(name)
     elif x == "q":
-        print("\nQuitting program...")
+        filmList.SetContentFile("filmList.csv")
+        filmList.Upload()
+        print("\nUpdated Film List and uploaded to drive. Quitting program...")
         exit()
     else:
         print("\nInvalid Operation...")
     return menu()
 
-if __name__ == "__main__":
-    menu()
+menu()
