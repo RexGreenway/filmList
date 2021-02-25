@@ -1,2 +1,3 @@
 **/.vscode
-**/__pycache__
+**/filmList_env
+mycreds.txt
