@@ -74,7 +74,7 @@ def updateFilm(name):
             csv_write.writerow([row[0], "SEEN"])
             state = True
         # If name is close show possible reccomendations. Then write the row.
-        elif name in row[0]:
+        elif name.lower() in row[0].lower():
             print("See also: ", row[0])
             csv_write.writerow(row)
         # Always write the row.
@@ -90,26 +90,36 @@ def showUnseen():
     unseen_df = df.loc[df["status"] == "UNSEEN", "name"]
     print(unseen_df.to_string(index=False))
 
+def showSeen():
+    df = pd.read_csv("filmList.csv")
+    unseen_df = df.loc[df["status"] == "SEEN", "name"]
+    print(unseen_df.to_string(index=False))
+
+# Prints entire film list
+def showAll():
+    df = pd.read_csv("filmList.csv")
+    print(df.to_string(index=False))
+
 # Displays film staus if it exists in the list. 
 def checkFilm(name):
-    df = pd.read_csv("filmList.csv")
-    for _, row in df.iterrows():
-        if row["name"] == name:
-            print("Name: ", row["name"], "\nStatus: ", row["status"])
-            return
-    print("Not in list...")
-
-def checkFilm(name):
-    df = pd.read_csv("filmList.csv")
-    for _, row in df.iterrows():
-        if row["name"] == name:
-            print("Name: ", row["name"], "\nStatus: ", row["status"])
-            return
-    print("Not in list...")
+    filmList_reader = open("filmList.csv", "r")
+    csv_read = csv.reader(filmList_reader.readlines())
+    csv_write = csv.writer(open("filmList.csv", "w", newline=""))
+    state = False
+    # Goes through each row in the csv
+    for row in csv_read:
+        # If an existing name is entered replace with the SEEN
+        if name.lower() in row[0].lower():
+                print("Films: ", row)
+                state = True
+        csv_write.writerow(row)
+    if state == False:
+        print("No Such Film.")
+    filmList_reader.close()
 
 def menu():
     print("\n- SELECT OPERATION -")
-    x = input("[rand, add, remove, update, unseeen, check]: ")
+    x = input("[rand, add, remove, update, unseeen, seen, check, all]: ")
     if x == "rand":
         print("\nRandom Unseen Film: ")
         randomUnseenFilm()
@@ -130,9 +140,15 @@ def menu():
     elif x == "unseen":
         print("\nList of Unseen Films: ")
         showUnseen()
+    elif x == "seen":
+        print("\nList of Seen Films: ")
+        showSeen()
     elif x == "check":
         name = input("\nFilm to check: ")
         checkFilm(name)
+    elif x == "all":
+        print("\nList of All Films: ")
+        showAll()
     elif x == "q":
         filmList.SetContentFile("filmList.csv")
         filmList.Upload()
